@@ -71,7 +71,7 @@ jobs:
       with:
         name: coverage-${{ matrix.config.os }}-node-${{ matrix.node-version }}
         path: coverage/
-    - uses: codecov/codecov-action@v5
+    - uses: codecov/codecov-action@v7
       with:
         files: ./coverage/lcov.info,./coverage/cpp-cobertura.xml
         disable_search: true
