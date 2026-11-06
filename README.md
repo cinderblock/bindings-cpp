@@ -31,7 +31,7 @@ The Bindings provide a low level interface to work with your serialport. It is p
 1. Clone this repo `git clone git@github.com:serialport/bindings-cpp.git`
 1. Run `npm install` to setup local package dependencies (run this any time you depend on a package local to this repo)
 1. Run `npm test` to ensure everything is working properly
-1. If you have a serial loopback device (TX to RX) you can run run `TEST_PORT=/path/to/port npm test` for a more comprehensive test suite. (Defaults to 115200 baud customize with the TEST_BAUD env.) You can use an arduino with the `test/arduino-echo` sketch.
+1. If you have a serial loopback device (TX to RX) you can run run `TEST_PORT=/path/to/port npm test` for a more comprehensive test suite. (Defaults to 115200 baud customize with the TEST_BAUDRATE env.) You can use an arduino with the `test/arduino-echo` sketch.
 1. On Linux and macOS, a pseudo-terminal works as a loopback without any hardware: `socat pty,raw,echo=0,link=/tmp/ttyLOOP exec:cat &`, then `TEST_PORT=/tmp/ttyLOOP TEST_PORT_TYPE=pty npm test`. `TEST_PORT_TYPE=pty` skips the tests a pty can't support (modem control lines, and custom baud rates on macOS). CI runs the tests this way.
 
 ### Developing Docs
