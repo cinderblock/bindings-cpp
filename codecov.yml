@@ -5,8 +5,8 @@ parsers:
 coverage:
   status:
     patch: false
-require_ci_to_pass: true
 codecov:
+    require_ci_to_pass: true
     notify:
         after_n_builds: 9
 # One upload per CI job carries both reports, flagged with the OS. Components split them by path.
