@@ -72,6 +72,15 @@ jobs:
         ls -l "$RUNNER_TEMP/ttyLOOP" || true
         ps -eo pid,stat,args | grep -E 'pty-loopback|node' | grep -v grep || true
     - if: runner.os == 'Windows'
+      name: Start a loopback serial port
+      # A com0com virtual null-modem pair with an echo on COM11, so the hardware tests run against
+      # COM10. TEST_PORT_TYPE=com0com skips what the pair can't do (see test/config.json).
+      shell: pwsh
+      run: |
+        ./test/com0com-loopback.ps1 -TestPort COM10 -EchoPort COM11
+        "TEST_PORT=COM10" >> $env:GITHUB_ENV
+        "TEST_PORT_TYPE=com0com" >> $env:GITHUB_ENV
+    - if: runner.os == 'Windows'
       timeout-minutes: 5
       # OpenCppCoverage can't start npm.cmd, so it runs npm's own entry point with node
       run: |
@@ -82,6 +91,13 @@ jobs:
           --export_type "cobertura:coverage\cpp-cobertura.xml" `
           -- node $npmCli test
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    - if: failure() && runner.os == 'Windows'
+      name: Show the loopback's state
+      shell: pwsh
+      run: |
+        Get-Content "$env:RUNNER_TEMP\serial-echo.log", "$env:RUNNER_TEMP\serial-echo.log.err" -ErrorAction SilentlyContinue
+        [System.IO.Ports.SerialPort]::GetPortNames()
+        Get-CimInstance Win32_Process -Filter "Name = 'pwsh.exe' OR Name = 'node.exe'" | Select-Object ProcessId, CommandLine | Format-Table -AutoSize -Wrap
     - if: runner.os != 'Windows'
       name: Convert gcov data to a Cobertura report
       run: >
