@@ -50,7 +50,20 @@ jobs:
     # Linux and macOS (see binding.gyp). On Windows, OpenCppCoverage reads the debug build's PDB.
     - run: npm run rebuild -- --debug --coverage
     - if: runner.os != 'Windows'
-      run: npm test
+      name: Start a loopback serial port
+      # A pty whose other end is `cat`: everything written to TEST_PORT is read back, like a
+      # TX-RX jumper. That lets the hardware tests in lib/bindings.test.ts run.
+      run: |
+        if [ "$RUNNER_OS" = Linux ]; then sudo apt-get install -y -qq socat; else brew install socat; fi
+        port="$RUNNER_TEMP/ttyLOOP"
+        nohup socat -d -d pty,raw,echo=0,link="$port" exec:cat > "$RUNNER_TEMP/socat.log" 2>&1 &
+        for i in $(seq 50); do [ -e "$port" ] && break; sleep 0.1; done
+        ls -l "$port"
+        echo "TEST_PORT=$port" >> "$GITHUB_ENV"
+    - if: runner.os != 'Windows'
+      # DISCOVERY RUN: --no-bail so every test a pty can't pass shows up at once
+      continue-on-error: true
+      run: npm test -- --no-bail
     - if: runner.os == 'Windows'
       # OpenCppCoverage can't start npm.cmd, so it runs npm's own entry point with node
       run: |
