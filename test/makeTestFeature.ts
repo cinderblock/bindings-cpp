@@ -1,8 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import testConfig from './config.json'
 
-export const makeTestFeature = (envName: string, testPort?: string) => {
-  const config = { ...testConfig.all, ...(testConfig as any)[envName] }
+// `testPortType` (from the TEST_PORT_TYPE env var, e.g. "pty") also applies the
+// `${envName}-${testPortType}` section of config.json, for ports that can't do everything a real UART can
+export const makeTestFeature = (envName: string, testPort?: string, testPortType?: string) => {
+  const config = {
+    ...testConfig.all,
+    ...(testConfig as any)[envName],
+    ...(testPortType ? (testConfig as any)[`${envName}-${testPortType}`] : {}),
+  }
 
   const testFeature = (feature: string, description: string, callback: () => any) => {
     if (config[feature] === false) {

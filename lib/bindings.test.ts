@@ -9,6 +9,8 @@ import { BindingsError } from './errors'
 
 // All bindings are required to work with an "echo" firmware
 const TEST_PORT = process.env.TEST_PORT
+// Set to "pty" when TEST_PORT is a pseudo-terminal loopback (see test/config.json)
+const TEST_PORT_TYPE = process.env.TEST_PORT_TYPE
 const TEST_BAUD = Number(process.env.TEST_BAUDRATE) || 115200
 
 const defaultOpenOptions: OpenOptions = {
@@ -42,7 +44,7 @@ testBinding('mock', MockBinding, '/dev/exists')
 testBinding(process.platform, autoDetect(), TEST_PORT)
 
 function testBinding(bindingName: string, Binding: BindingInterface, testPort?: string) {
-  const { testFeature, describeHardware } = makeTestFeature(bindingName, testPort)
+  const { testFeature, describeHardware } = makeTestFeature(bindingName, testPort, bindingName === 'mock' ? undefined : TEST_PORT_TYPE)
 
   describe(`bindings/${bindingName}`, () => {
     before(() => {
@@ -347,7 +349,7 @@ function testBinding(bindingName: string, Binding: BindingInterface, testPort?: 
           await port.close()
         })
 
-        it('sets flags on the port', async () => {
+        testFeature('port.set', 'sets flags on the port', async () => {
           const port = await Binding.open(options)
           await port.set(defaultSetFlags)
           await port.close()
@@ -361,7 +363,7 @@ function testBinding(bindingName: string, Binding: BindingInterface, testPort?: 
           await shouldReject(port.get(), Error)
         })
 
-        it('gets modem line status from the port', async () => {
+        testFeature('port.get', 'gets modem line status from the port', async () => {
           const port = await Binding.open(options)
           const status = await port.get()
           assert.isObject(status)
