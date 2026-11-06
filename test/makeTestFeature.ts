@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import testConfig from './config.json'
 
-// `testPortType` (from the TEST_PORT_TYPE env var, e.g. "pty") also applies the
-// `${envName}-${testPortType}` section of config.json, for ports that can't do everything a real UART can
+// `testPortType` (from the TEST_PORT_TYPE env var, e.g. "pty" or "com0com") also applies the
+// `${envName}-${testPortType}` section of config.json, for virtual ports that can do less, or more,
+// than the hardware the platform section was written for
 export const makeTestFeature = (envName: string, testPort?: string, testPortType?: string) => {
   const config = {
     ...testConfig.all,

@@ -9,7 +9,7 @@ import { BindingsError } from './errors'
 
 // All bindings are required to work with an "echo" firmware
 const TEST_PORT = process.env.TEST_PORT
-// Set to "pty" when TEST_PORT is a pseudo-terminal loopback (see test/config.json)
+// "pty" or "com0com" when TEST_PORT is a virtual loopback (see test/config.json)
 const TEST_PORT_TYPE = process.env.TEST_PORT_TYPE
 const TEST_BAUD = Number(process.env.TEST_BAUDRATE) || 115200
 
