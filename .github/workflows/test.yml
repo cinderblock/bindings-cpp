@@ -18,6 +18,11 @@ jobs:
     - run: npm run typecheck
   test:
     runs-on: ${{ matrix.config.os }}
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      # Lets codecov-action authenticate with OIDC instead of a stored token
+      id-token: write
     strategy:
       matrix:
         node-version: [18.x, 20.x, 22.x]
@@ -31,9 +36,45 @@ jobs:
     - uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
+    - name: Install C++ coverage tools
+      shell: bash
+      run: |
+        if [ "$RUNNER_OS" = Windows ]; then
+          choco install opencppcoverage --no-progress -y
+          echo "C:\Program Files\OpenCppCoverage" >> "$GITHUB_PATH"
+        else
+          pipx install gcovr
+        fi
     - run: npm ci
-    - run: npm run rebuild
-    - run: npm test
-    - uses: codecov/codecov-action@v4
+    # Debug builds (-O0 / /Od) keep line coverage accurate. --coverage adds gcov instrumentation on
+    # Linux and macOS (see binding.gyp). On Windows, OpenCppCoverage reads the debug build's PDB.
+    - run: npm run rebuild -- --debug --coverage
+    - if: runner.os != 'Windows'
+      run: npm test
+    - if: runner.os == 'Windows'
+      # OpenCppCoverage can't start npm.cmd, so it runs npm's own entry point with node
+      run: |
+        $npmCli = Join-Path (Split-Path (Get-Command node).Source) 'node_modules\npm\bin\npm-cli.js'
+        OpenCppCoverage.exe --quiet --cover_children `
+          --modules bindings.node `
+          --sources "${{ github.workspace }}\src" `
+          --export_type "cobertura:coverage\cpp-cobertura.xml" `
+          -- node $npmCli test
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    - if: runner.os != 'Windows'
+      name: Convert gcov data to a Cobertura report
+      run: >
+        gcovr --root . --filter src/ --print-summary
+        ${{ runner.os == 'macOS' && '--gcov-executable "xcrun llvm-cov gcov"' || '' }}
+        --cobertura coverage/cpp-cobertura.xml
+    - uses: actions/upload-artifact@v4
       with:
-        directory: ./coverage/
+        name: coverage-${{ matrix.config.os }}-node-${{ matrix.node-version }}
+        path: coverage/
+    - uses: codecov/codecov-action@v5
+      with:
+        files: ./coverage/lcov.info,./coverage/cpp-cobertura.xml
+        disable_search: true
+        flags: ${{ runner.os }}
+        # OIDC isn't available to pull requests from forks; those upload tokenless instead
+        use_oidc: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork) }}

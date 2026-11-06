@@ -46,6 +46,30 @@ It's very important that your pull requests include all of the above in order fo
 
 Tests are written using [mocha](https://mochajs.org/), [chai](http://chaijs.com/) and [sinon](http://sinonjs.org/).  If you are having issues making a test pass, ask for help in the SerialPort [gitter](https://gitter.im/serialport/node-serialport) room or on your PR.  Tests can be the hardest part to write when contributing code, so don't be discouraged.
 
+### Coverage
+
+`npm test` reports coverage of the TypeScript in `lib/`. CI also measures the C++ in `src/`, on all three OSes. To do that locally, build the bindings in debug mode with coverage enabled, run the tests, then convert the results:
+
+- **Linux / macOS**: install [gcovr](https://gcovr.com) (`pipx install gcovr`), then:
+
+  ```sh
+  npm run rebuild -- --debug --coverage
+  npm test
+  gcovr --root . --filter src/ --html-details coverage/cpp/index.html
+  ```
+
+  On macOS, add `--gcov-executable "xcrun llvm-cov gcov"` to the `gcovr` command.
+
+- **Windows**: install [OpenCppCoverage](https://github.com/OpenCppCoverage/OpenCppCoverage) (`choco install opencppcoverage`), then in PowerShell:
+
+  ```powershell
+  npm run rebuild -- --debug
+  $npmCli = Join-Path (Split-Path (Get-Command node).Source) 'node_modules\npm\bin\npm-cli.js'
+  OpenCppCoverage.exe --cover_children --modules bindings.node --sources "$PWD\src" -- node $npmCli test
+  ```
+
+  The HTML report is written to a `CoverageReport-*` folder. Debug builds print C runtime errors (such as heap corruption) to stderr and exit, instead of opening a dialog.
+
 <a name="writing-docs"></a>
 ## Writing Documentation
 

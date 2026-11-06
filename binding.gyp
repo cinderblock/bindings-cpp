@@ -1,6 +1,10 @@
 {
   'variables': {
-    'openssl_fips': ''
+    'openssl_fips': '',
+    # Instrument the native code for coverage reports: `npm run rebuild -- --debug --coverage`
+    # Linux and macOS write gcov data. Windows needs no compiler flags, because OpenCppCoverage
+    # reads the debug build's PDB. See CONTRIBUTING.md.
+    'coverage%': 'false'
   },
   'targets': [{
     'target_name': 'bindings',
@@ -73,6 +77,21 @@
             'src/serialport_unix.cpp',
             'src/poller.cpp'
           ]
+        }
+      ],
+      ['coverage=="true" and OS!="win"',
+        {
+          # The compiler driver links the matching runtime (libgcov, or clang's profile runtime)
+          'cflags': [ '--coverage' ],
+          'ldflags': [ '--coverage' ],
+          'xcode_settings': {
+            'OTHER_CFLAGS': [ '--coverage' ],
+            'OTHER_LDFLAGS': [ '--coverage' ],
+            # Build only the host architecture: a universal build compiles each source twice,
+            # and the second pass overwrites the first pass's .gcno notes file
+            'OTHER_CFLAGS!': [ '-arch x86_64', '-arch arm64' ],
+            'OTHER_LDFLAGS!': [ '-arch x86_64', '-arch arm64' ]
+          }
         }
       ]
     ]

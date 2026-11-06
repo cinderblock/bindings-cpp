@@ -9,3 +9,14 @@ require_ci_to_pass: true
 codecov:
     notify:
         after_n_builds: 9
+# One upload per CI job carries both reports, flagged with the OS. Components split them by path.
+component_management:
+  individual_components:
+    - component_id: typescript
+      name: TypeScript
+      paths:
+        - lib/**
+    - component_id: cpp
+      name: C++
+      paths:
+        - src/**
