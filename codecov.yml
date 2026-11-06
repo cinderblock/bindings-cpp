@@ -4,13 +4,29 @@ parsers:
     enable_partials: yes
 coverage:
   status:
-    patch: false
-require_ci_to_pass: true
+    # Fail if total coverage drops more than 1% below the base commit.
+    # The macOS loopback numbers vary by a few lines between runs.
+    project:
+      default:
+        target: auto
+        threshold: 1%
+    # Report how much of a PR's new code is tested, without failing on it:
+    # some native code (modem lines, hardware errors) can't run in CI.
+    patch:
+      default:
+        informational: true
 codecov:
-    notify:
-        after_n_builds: 9
+  require_ci_to_pass: true
+  notify:
+    after_n_builds: 9
 # One upload per CI job carries both reports, flagged with the OS. Components split them by path.
 component_management:
+  # A TypeScript and a C++ check alongside the total, so one can't hide a drop in the other.
+  default_rules:
+    statuses:
+      - type: project
+        target: auto
+        threshold: 1%
   individual_components:
     - component_id: typescript
       name: TypeScript
