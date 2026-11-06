@@ -639,7 +639,7 @@ void CloseBaton::Execute() {
 }
 
 wchar_t *copySubstring(wchar_t *someString, int n) {
-  wchar_t *new_ = reinterpret_cast<wchar_t*>(malloc(sizeof(wchar_t)*n + 1));
+  wchar_t *new_ = reinterpret_cast<wchar_t*>(malloc(sizeof(wchar_t) * (n + 1)));
   wcsncpy_s(new_, n + 1, someString, n);
   new_[n] = '\0';
   return new_;
