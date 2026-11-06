@@ -51,13 +51,12 @@ jobs:
     - run: npm run rebuild -- --debug --coverage
     - if: runner.os != 'Windows'
       name: Start a loopback serial port
-      # A pty whose other end echoes everything back, like a TX-RX jumper, so the hardware tests
-      # in lib/bindings.test.ts run. TEST_PORT_TYPE=pty skips the few a pty can't support (see
-      # test/config.json). test/pty-echo.py explains why the echo isn't plain `cat`.
+      # A pty that echoes everything back, like a TX-RX jumper, so the hardware tests in
+      # lib/bindings.test.ts run. TEST_PORT_TYPE=pty skips the few a pty can't support (see
+      # test/config.json). test/pty-loopback.py explains why it isn't `socat ... exec:cat`.
       run: |
-        if [ "$RUNNER_OS" = Linux ]; then sudo apt-get install -y -qq socat; else brew install socat; fi
         port="$RUNNER_TEMP/ttyLOOP"
-        nohup socat -d -d pty,raw,echo=0,link="$port" exec:"python3 test/pty-echo.py" > "$RUNNER_TEMP/socat.log" 2>&1 &
+        nohup python3 test/pty-loopback.py "$port" > "$RUNNER_TEMP/pty-loopback.log" 2>&1 &
         for i in $(seq 50); do [ -e "$port" ] && break; sleep 0.1; done
         ls -l "$port"
         echo "TEST_PORT=$port" >> "$GITHUB_ENV"
@@ -66,6 +65,12 @@ jobs:
       # A native call stuck on the port keeps node from exiting, so fail fast instead
       timeout-minutes: 5
       run: npm test
+    - if: failure() && runner.os != 'Windows'
+      name: Show the loopback's state
+      run: |
+        cat "$RUNNER_TEMP/pty-loopback.log" || true
+        ls -l "$RUNNER_TEMP/ttyLOOP" || true
+        ps -eo pid,stat,args | grep -E 'pty-loopback|node' | grep -v grep || true
     - if: runner.os == 'Windows'
       timeout-minutes: 5
       # OpenCppCoverage can't start npm.cmd, so it runs npm's own entry point with node
