@@ -10,6 +10,12 @@ $stream = $serial.BaseStream
 $buffer = [byte[]]::new(4096)
 "echoing on $Port"
 while ($true) {
-  $n = $stream.Read($buffer, 0, $buffer.Length)
-  try { $stream.Write($buffer, 0, $n) } catch [System.TimeoutException] { } catch [System.IO.IOException] { }
+  try {
+    $n = $stream.Read($buffer, 0, $buffer.Length)
+  } catch [System.IO.IOException] {
+    # e.g. the other end purging while a read is pending; keep going
+    "read: $($_.Exception.Message)"
+    continue
+  }
+  try { $stream.Write($buffer, 0, $n) } catch [System.TimeoutException] { } catch [System.IO.IOException] { "write: $($_.Exception.Message)" }
 }

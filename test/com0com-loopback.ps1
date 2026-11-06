@@ -4,12 +4,14 @@
 # Needs an elevated shell, and a machine that loads com0com's 2011 signed driver: test-signing on
 # or Secure Boot off, as on GitHub's Windows runners. Most desktops with Secure Boot won't load it.
 #
-#   pwsh test/com0com-loopback.ps1            # installs COM10 <-> COM11, echoes on COM11
+#   pwsh test/com0com-loopback.ps1            # installs COM10 <-> COM11 if needed, echoes on COM11
 #   $env:TEST_PORT = 'COM10'; $env:TEST_PORT_TYPE = 'com0com'; npm test
 param(
   [string]$TestPort = 'COM10',
   [string]$EchoPort = 'COM11',
-  [string]$WorkDir = $(if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { [IO.Path]::GetTempPath() })
+  [string]$WorkDir = $(if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { [IO.Path]::GetTempPath() }),
+  # Only install the pair; don't start the echo
+  [switch]$NoEcho
 )
 $ErrorActionPreference = 'Stop'
 
@@ -40,7 +42,9 @@ if (-not ([System.IO.Ports.SerialPort]::GetPortNames() -contains $TestPort)) {
   for ($i = 0; $i -lt 50 -and -not ([System.IO.Ports.SerialPort]::GetPortNames() -contains $TestPort); $i++) { Start-Sleep -Milliseconds 100 }
 }
 
-# The echo runs in its own hidden process until the machine (or CI job) goes away
+if ($NoEcho) { return }
+
+# The echo runs in its own hidden process, until it's stopped or the machine goes away
 $echo = Join-Path $PSScriptRoot 'serial-echo.ps1'
 $log = Join-Path $WorkDir 'serial-echo.log'
 Start-Process pwsh -ArgumentList '-NoProfile', '-File', $echo, $EchoPort -WindowStyle Hidden -RedirectStandardOutput $log -RedirectStandardError "$log.err"
