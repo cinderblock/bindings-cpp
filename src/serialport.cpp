@@ -315,7 +315,29 @@ inline SerialPortRtsMode ToRtsModeEnum(const Napi::String& napistr) {
   return mode;
 }
 
+#if defined(_WIN32) && defined(_DEBUG)
+#include <crtdbg.h>
+#include <cstdio>
+#include <cstdlib>
+
+// The debug CRT reports heap corruption and failed assertions in a modal dialog, which blocks
+// forever on CI and pops up on a developer's desktop. Debug builds (used for coverage) print the
+// report to stderr and abort, so a test run fails visibly instead.
+static int ReportCrtErrorToStderr(int reportType, char *message, int *returnValue) {
+  fputs(message, stderr);
+  if (reportType == _CRT_WARN) {
+    *returnValue = 0;
+    return TRUE;
+  }
+  _set_abort_behavior(0, _WRITE_ABORT_MSG | _CALL_REPORTFAULT);
+  abort();
+}
+#endif
+
 Napi::Object init(Napi::Env env, Napi::Object exports) {
+#if defined(_WIN32) && defined(_DEBUG)
+  _CrtSetReportHook2(_CRT_RPTHOOK_INSTALL, ReportCrtErrorToStderr);
+#endif
   exports.Set("set", Napi::Function::New(env, Set));
   exports.Set("get", Napi::Function::New(env, Get));
   exports.Set("getBaudRate", Napi::Function::New(env, GetBaudRate));
