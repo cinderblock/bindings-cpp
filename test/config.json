@@ -22,5 +22,9 @@
     "baudrate.250000": false,
     "port.set": false,
     "port.get": false
+  },
+  "win32-com0com": {
+    "baudrate.25000": true,
+    "baudrate.25000_check": true
   }
 }

@@ -33,6 +33,7 @@ The Bindings provide a low level interface to work with your serialport. It is p
 1. Run `npm test` to ensure everything is working properly
 1. If you have a serial loopback device (TX to RX) you can run run `TEST_PORT=/path/to/port npm test` for a more comprehensive test suite. (Defaults to 115200 baud customize with the TEST_BAUDRATE env.) You can use an arduino with the `test/arduino-echo` sketch.
 1. On Linux and macOS, a pseudo-terminal works as a loopback without any hardware: `python3 test/pty-loopback.py /tmp/ttyLOOP &`, then `TEST_PORT=/tmp/ttyLOOP TEST_PORT_TYPE=pty npm test`. `TEST_PORT_TYPE=pty` skips the tests a pty can't support (modem control lines, and custom baud rates on macOS). CI runs the tests this way.
+1. On Windows, CI uses a [com0com](https://sourceforge.net/projects/com0com/) virtual null-modem pair with an echo on one end: `test/com0com-loopback.ps1` (elevated) installs `COM10`/`COM11` and echoes on `COM11`, then `TEST_PORT=COM10 TEST_PORT_TYPE=com0com npm test`. com0com's signed driver is from 2011 and only loads with test-signing on or Secure Boot off, as on GitHub's runners, so on most desktops a USB serial adapter with TX wired to RX is the easier loopback.
 
 ### Developing Docs
 
