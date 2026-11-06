@@ -51,20 +51,23 @@ jobs:
     - run: npm run rebuild -- --debug --coverage
     - if: runner.os != 'Windows'
       name: Start a loopback serial port
-      # A pty whose other end is `cat`: everything written to TEST_PORT is read back, like a
-      # TX-RX jumper. That lets the hardware tests in lib/bindings.test.ts run. TEST_PORT_TYPE=pty
-      # skips the few a pty can't support (see test/config.json).
+      # A pty whose other end echoes everything back, like a TX-RX jumper, so the hardware tests
+      # in lib/bindings.test.ts run. TEST_PORT_TYPE=pty skips the few a pty can't support (see
+      # test/config.json). test/pty-echo.py explains why the echo isn't plain `cat`.
       run: |
         if [ "$RUNNER_OS" = Linux ]; then sudo apt-get install -y -qq socat; else brew install socat; fi
         port="$RUNNER_TEMP/ttyLOOP"
-        nohup socat -d -d pty,raw,echo=0,link="$port" exec:cat > "$RUNNER_TEMP/socat.log" 2>&1 &
+        nohup socat -d -d pty,raw,echo=0,link="$port" exec:"python3 test/pty-echo.py" > "$RUNNER_TEMP/socat.log" 2>&1 &
         for i in $(seq 50); do [ -e "$port" ] && break; sleep 0.1; done
         ls -l "$port"
         echo "TEST_PORT=$port" >> "$GITHUB_ENV"
         echo "TEST_PORT_TYPE=pty" >> "$GITHUB_ENV"
     - if: runner.os != 'Windows'
+      # A native call stuck on the port keeps node from exiting, so fail fast instead
+      timeout-minutes: 5
       run: npm test
     - if: runner.os == 'Windows'
+      timeout-minutes: 5
       # OpenCppCoverage can't start npm.cmd, so it runs npm's own entry point with node
       run: |
         $npmCli = Join-Path (Split-Path (Get-Command node).Source) 'node_modules\npm\bin\npm-cli.js'
