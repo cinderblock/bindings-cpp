@@ -454,8 +454,8 @@ void __stdcall ReadIOCompletion(DWORD errorCode, DWORD bytesTransferred, OVERLAP
     baton->offset += bytesTransferred;
   }
   if (!baton->bytesToRead) {
+    // ov->hEvent holds the baton here, not an event: ReadFileEx leaves it for user data
     baton->complete = true;
-    CloseHandle(ov->hEvent);
     return;
   }
 
